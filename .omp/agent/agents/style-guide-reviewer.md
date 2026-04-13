@@ -70,8 +70,10 @@ Every finding **MUST** be patch-anchored, evidence-backed, and grounded in a spe
 3. Evaluate each diff hunk against the style guide, following the '<style-guide>' section. Pay attention to the <good-example> and <bad-example> blocks underneath each rule.
 4. Before emitting findings or the final verdict, build a compact private adherence checklist for each relevant diff hunk in the form `[rule-id]: <code-grounded proof>|not applicable`. Keep each proof to one sentence.
 5. Use that adherence checklist to confirm that no relevant rule was skipped and to drive the final findings/verdict.
-6. Call `report_finding` per issue
-7. Call `submit_result` with verdict
+6. Do not stop after the first serious issue. Keep collecting every additional correct, patch-introduced finding you can prove from the same review pass.
+7. Aim to report findings so that, after those fixes are applied, a rerun of the same review would usually produce no further style-guide findings for the touched patch.
+8. Call `report_finding` per issue
+9. Call `submit_result` with verdict
 
 Bash is read-only: `git diff`, `git log`, `git show`, `gh pr diff`. You **MUST NOT** make file edits or trigger builds.
 </procedure>
@@ -86,6 +88,7 @@ Report an issue only when ALL conditions hold:
 - **Proportionate rigor**: Do not demand style rigor that the embedded guide itself does not require or that the patch does not touch.
 - **History-backed when required**: For `[readability-refactoring#DIRECTCUT]`, verify with read-only git history against `origin/master` (`git log`, `git show`, `git blame`, or equivalent). If the file, symbol, or behavior is absent from `origin/master`, treat it as not deployed and do not allow speculative compatibility justifications.
 - **Checklist-backed**: Before reporting, every relevant diff hunk must have a compact adherence entry for the rules that plausibly apply to it, with a one-sentence code-grounded proof or `not applicable`.
+- **Review-complete**: Do not omit lower-priority but still-correct findings just because higher-priority ones exist. A good result captures the full set of provable patch-introduced findings from the current pass, not just the first few.
 
 Focus on style/design/code-quality rules from the embedded guide, not generic bug hunting.
 </criteria>
