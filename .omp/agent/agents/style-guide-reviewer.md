@@ -122,33 +122,46 @@ function build_settlement_plan(): settlement_plan {
 }
 </bad-example>
 
-- [typescript-design#NAMESEM] Names **SHOULD** reflect operation semantics honestly: DB reads **SHOULD** use `get*`, and when the read must return a value they **SHOULD** use `get*Strict`; API reads **SHOULD** use `fetch*` or `get*`; creates **SHOULD** use `create*`; most domain logic **SHOULD** treat `create*` as idempotent by default; explicit `createOrGet*` naming **SHOULD** be reserved mainly for store methods or other boundaries where the get-vs-create behavior is itself the important contract; full updates **SHOULD** use `update*`; partial updates **SHOULD** use `patch*`; multi-record reads **SHOULD** use `getAll*`; filtered multi-record reads **SHOULD** use `getAll*By*`; removals **SHOULD** use `remove*`; throwing guards **SHOULD** use `assert*`; boolean guards **SHOULD** use `is*`; in-memory construction **SHOULD** use `build*`; in-memory resolution **SHOULD** use `resolve*`; in-memory mapping **SHOULD** use `map*` or `to*`. Reserve `get*` for DB/API retrieval, not in-memory transforms.
-<good-example rule="[typescript-design#NAMESEM]" name="naming-semantics">
-async function getAccountRecord(accountId: string): Promise<IAccountRecord | undefined> {}
-async function getAccountRecordStrict(accountId: string): Promise<IAccountRecord> {}
-async function fetchAccountBalance(accountId: string): Promise<IAccountBalance> {}
-async function createAccount(input: ICreateAccountInput): Promise<IAccountRecord> {}
-async function createOrGetAccount(input: ICreateAccountInput): Promise<IAccountRecord> {}
-async function updateAccount(record: IAccountRecord): Promise<IAccountRecord> {}
-async function patchAccount(accountId: string, patch: Partial<IAccountRecord>): Promise<IAccountRecord> {}
-async function getAllAccounts(): Promise<IAccountRecord[]> {}
-async function getAllAccountsByStatus(status: AccountStatus): Promise<IAccountRecord[]> {}
-async function removeAccount(accountId: string): Promise<void> {}
+- [typescript-design#NAMESTORE] At stores and other boundaries where storage or retrieval behavior is the important contract, names **SHOULD** reflect that behavior honestly: DB reads **SHOULD** use `get*`, and when the read must return a value they **SHOULD** use `get*Strict`; API reads **SHOULD** use `fetch*` or `get*`; creates **SHOULD** use `create*`; explicit `createOrGet*` naming **SHOULD** be reserved mainly for store methods or other boundaries where the get-vs-create behavior is itself the important contract; full updates **SHOULD** use `update*`; partial updates **SHOULD** use `patch*`; multi-record reads **SHOULD** use `getAll*`; filtered multi-record reads **SHOULD** use `getAll*By*`; removals **SHOULD** use `remove*`. Most domain logic **SHOULD** treat `create*` as idempotent by default rather than exposing the get-vs-create distinction in the name.
+<good-example rule="[typescript-design#NAMESTORE]" name="boundary-storage-naming">
+interface IAccountStore {
+	getAccountRecord(accountId: string): Promise<IAccountRecord | undefined>;
+	getAccountRecordStrict(accountId: string): Promise<IAccountRecord>;
+	fetchAccountBalance(accountId: string): Promise<IAccountBalance>;
+	createAccount(input: ICreateAccountInput): Promise<IAccountRecord>;
+	createOrGetAccount(input: ICreateAccountInput): Promise<IAccountRecord>;
+	updateAccount(record: IAccountRecord): Promise<IAccountRecord>;
+	patchAccount(accountId: string, patch: Partial<IAccountRecord>): Promise<IAccountRecord>;
+	getAllAccounts(): Promise<IAccountRecord[]>;
+	getAllAccountsByStatus(status: AccountStatus): Promise<IAccountRecord[]>;
+	removeAccount(accountId: string): Promise<void>;
+}
+</good-example>
+<bad-example rule="[typescript-design#NAMESTORE]" name="boundary-storage-dishonest-naming">
+interface IAccountStore {
+	buildAccountRecord(accountId: string): Promise<IAccountRecord | undefined>;
+	getOrCreateAccount(input: ICreateAccountInput): Promise<IAccountRecord>;
+	updateAccountPatch(accountId: string, patch: Partial<IAccountRecord>): Promise<IAccountRecord>;
+	getAccountsByStatus(status: AccountStatus): Promise<IAccountRecord[]>;
+	deleteAccount(accountId: string): Promise<void>;
+}
+</bad-example>
+
+- [typescript-design#NAMEINMEM] Across code, throwing guards **SHOULD** use `assert*`; boolean guards **SHOULD** use `is*`; in-memory construction **SHOULD** use `build*`; in-memory resolution **SHOULD** use `resolve*`; in-memory mapping **SHOULD** use `map*` or `to*`. Reserve `get*` for DB/API retrieval, not in-memory transforms.
+<good-example rule="[typescript-design#NAMEINMEM]" name="in-memory-and-guard-naming">
 function assertAccountOwner(record: IAccountRecord, ownerId: string): void {}
 function isClosedAccount(record: IAccountRecord): boolean {}
 function buildAccountSnapshot(input: IAccountInput): IAccountSnapshot {}
 function resolveTargetAccount(records: IAccountRecord[]): IAccountRecord | undefined {}
 function mapAccountIds(records: IAccountRecord[]): string[] {}
+function toAccountIds(records: IAccountRecord[]): string[] {}
 </good-example>
-<bad-example rule="[typescript-design#NAMESEM]" name="dishonest-naming-semantics">
+<bad-example rule="[typescript-design#NAMEINMEM]" name="in-memory-and-guard-dishonest-naming">
 function getTrimmedValue(input: string): string { return input.trim(); }
-async function buildAccountRecord(accountId: string): Promise<IAccountRecord | undefined> {}
-async function getOrCreateAccount(input: ICreateAccountInput): Promise<IAccountRecord> {}
-async function updateAccountPatch(accountId: string, patch: Partial<IAccountRecord>): Promise<IAccountRecord> {}
-async function getAccountsByStatus(status: AccountStatus): Promise<IAccountRecord[]> {}
-async function deleteAccount(accountId: string): Promise<void> {}
 function checkAccountOwner(record: IAccountRecord, ownerId: string): void {}
 function accountIsClosed(record: IAccountRecord): boolean {}
+function createAccountSnapshot(input: IAccountInput): IAccountSnapshot {}
+function getAccountIds(records: IAccountRecord[]): string[] {}
 </bad-example>
 
 - [typescript-design#DOMHONEST] Config, logging, and contracts **MUST** describe only their own domain concepts and invariants.
