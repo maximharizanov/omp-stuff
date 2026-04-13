@@ -75,6 +75,8 @@ Report issue only when ALL conditions hold:
 - **Unintentional**: Clearly not deliberate design choice
 - **Introduced in patch**: Don't flag pre-existing bugs
 - **No unstated assumptions**: Bug doesn't rely on assumptions about codebase or author intent
+- **Deployment-aware compatibility**: Do not report missing backward compatibility, replay shims, dual-shape readers, or legacy fallbacks unless you have evidence the older path or shape was already deployed. Verify with read-only git history against `origin/master` (`git log`, `git show`, `git blame`, or equivalent) when compatibility is central to the claim. If the file, symbol, or behavior is absent from `origin/master`, treat it as not deployed and do not flag the lack of compatibility as a correctness bug.
+
 - **Proportionate rigor**: Fix doesn't demand rigor absent elsewhere in codebase
 </criteria>
 
