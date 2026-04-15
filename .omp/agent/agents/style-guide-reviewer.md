@@ -344,6 +344,23 @@ async function settleWallet(request: ISettleWalletRequest): Promise<void> {
 }
 </bad-example>
 
+- [typescript-design#INLINEWRP] Helpers and methods **MUST NOT** exist solely to forward the same inputs to another function or method and return its result unchanged. If a wrapper adds no validation, adaptation, boundary semantics, caching, logging, transaction scope, or domain meaning, code **MUST** inline the underlying call and remove the wrapper.
+<good-example rule="[typescript-design#INLINEWRP]" name="inline-direct-call-instead-of-wrapper">
+async function settleWallet(request: ISettleWalletRequest): Promise<void> {
+	validateSettlementRequest(request);
+	await persistSettlement(buildSettlement(request));
+}
+</good-example>
+<bad-example rule="[typescript-design#INLINEWRP]" name="trivial-forwarding-wrapper">
+function persistBuiltSettlement(request: ISettleWalletRequest): Promise<void> {
+	return settleWallet(request);
+}
+
+async function runSettlement(request: ISettleWalletRequest): Promise<void> {
+	await persistBuiltSettlement(request);
+}
+</bad-example>
+
 - [typescript-design#PUREFN] Code **SHOULD** prefer pure functions when practical.
 <good-example rule="[typescript-design#PUREFN]" name="pure-helper">
 function getSettlementKey(walletId: string, transferId: string): string {
@@ -478,7 +495,7 @@ type TSelectionInput<TId extends string = string, TIncludeArchived extends boole
 };
 </bad-example>
 
-- [typescript-design#HONESTNAME] Names **SHOULD** reflect role honestly: utility members **SHOULD NOT** leak business/domain terms, and business-anchored members **SHOULD NOT** pretend to be generic utilities.
+- [typescript-design#HONESTNAME] Names **SHOULD** reflect role honestly: utility members **SHOULD NOT** leak business/domain terms, and business-anchored members **SHOULD NOT** pretend to be generic utilities. Guard and assertion names **SHOULD** describe the invariant they enforce, not incidental persistence or representation details such as `field`, `fields`, `column`, or `mapping`, unless that detail is itself the business-relevant concept.
 <good-example rule="[typescript-design#HONESTNAME]" name="role-honest-naming">
 function getTrimmedValue(input: string): string {
 	return input.trim();
@@ -495,6 +512,24 @@ function getTrimmedInvoiceId(input: string): string {
 
 function buildPayload(id: string): IInvoiceReminder {
 	return { invoiceId: id };
+}
+</bad-example>
+<good-example rule="[typescript-design#HONESTNAME]" name="invariant-first-assertion-naming">
+function assertEntityCompatible(current: IEntityRecord, incoming: IEntityInput): void {
+	...
+}
+
+function assertEntityPresent(current: IEntityRecord): void {
+	...
+}
+</good-example>
+<bad-example rule="[typescript-design#HONESTNAME]" name="mechanism-first-assertion-naming">
+function assertEntityFieldsMatch(current: IEntityRecord, incoming: IEntityInput): void {
+	...
+}
+
+function assertEntityFieldPresent(current: IEntityRecord): void {
+	...
 }
 </bad-example>
 
