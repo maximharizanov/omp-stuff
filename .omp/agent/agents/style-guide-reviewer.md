@@ -4,7 +4,7 @@ description: "Code review specialist for style-guide compliance analysis"
 tools: read, grep, find, bash, lsp, web_search, ast_grep, report_finding
 spawns: explore
 model: pi/slow
-thinking-level: xhigh
+thinking-level: high
 blocking: true
 output:
   properties:
@@ -101,30 +101,6 @@ Interpret RFC 2119 words literally:
 
 ## typescript-design
 ### Naming and type truthfulness
-- [typescript-design#CASESTYLE] Variables and functions **MUST** use camelCase; constants **MAY** use SCREAMING_SNAKE_CASE; classes, types, enums, and files **MUST** use PascalCase; DB record fields **MUST** use snake_case.
-<good-example rule="[typescript-design#CASESTYLE]" name="naming-and-casing">
-type SettlementPlan = {
-	bank_account_id: string;
-};
-
-const settlementAmount = "1000";
-const MAX_RETRY_LIMIT = 3;
-
-function buildSettlementPlan(): SettlementPlan {
-	return { bank_account_id: "ba_1" };
-}
-</good-example>
-<bad-example rule="[typescript-design#CASESTYLE]" name="naming-and-casing">
-type settlement_plan = {
-	bankAccountId: string;
-};
-
-const Settlement_Amount = "1000";
-function build_settlement_plan(): settlement_plan {
-	return { bankAccountId: "ba_1" };
-}
-</bad-example>
-
 - [typescript-design#NAMESTORE] At stores and other boundaries where storage or retrieval behavior is the important contract, names **SHOULD** reflect that behavior honestly: DB reads **SHOULD** use `get*`, and when the read must return a value they **SHOULD** use `get*Strict`; API reads **SHOULD** use `fetch*` or `get*`; creates **SHOULD** use `create*`; explicit `createOrGet*` naming **SHOULD** be reserved mainly for store methods or other boundaries where the get-vs-create behavior is itself the important contract; full updates **SHOULD** use `update*`; partial updates **SHOULD** use `patch*`; multi-record reads **SHOULD** use `getAll*`; filtered multi-record reads **SHOULD** use `getAll*By*`; removals **SHOULD** use `remove*`. Most domain logic **SHOULD** treat `create*` as idempotent by default rather than exposing the get-vs-create distinction in the name.
 <good-example rule="[typescript-design#NAMESTORE]" name="boundary-storage-naming">
 interface IAccountStore {
@@ -150,10 +126,11 @@ interface IAccountStore {
 }
 </bad-example>
 
-- [typescript-design#NAMEINMEM] Across code, throwing guards **SHOULD** use `assert*`; boolean guards **SHOULD** use `is*`; in-memory construction **SHOULD** use `build*`; in-memory resolution **SHOULD** use `resolve*`; in-memory mapping **SHOULD** use `map*` or `to*`. Reserve `get*` for DB/API retrieval, not in-memory transforms.
+- [typescript-design#NAMEINMEM] Across code, throwing guards **SHOULD** use `assert*`; boolean guards and predicates **SHOULD** use `is*` or `do*` when the name reads more naturally as a comparison or question; in-memory construction **SHOULD** use `build*`; in-memory resolution **SHOULD** use `resolve*`; in-memory mapping **SHOULD** use `map*` or `to*`. Reserve `get*` for DB/API retrieval, not in-memory transforms.
 <good-example rule="[typescript-design#NAMEINMEM]" name="in-memory-and-guard-naming">
 function assertAccountOwner(record: IAccountRecord, ownerId: string): void {}
 function isClosedAccount(record: IAccountRecord): boolean {}
+function doParityContextsMatch(left: IParityContext, right: IParityContext): boolean {}
 function buildAccountSnapshot(input: IAccountInput): IAccountSnapshot {}
 function resolveTargetAccount(records: IAccountRecord[]): IAccountRecord | undefined {}
 function mapAccountIds(records: IAccountRecord[]): string[] {}
@@ -546,47 +523,6 @@ function makeExpenseRecord(overrides: Partial<IExpenseRecord>): IExpenseRecord {
 }
 </bad-example>
 
-- [testing#INTEGTEST] Tests **SHOULD** prefer integration coverage in most cases.
-<good-example rule="[testing#INTEGTEST]" name="integration-test-boundary">
-it("settles a wallet through the public handler", async () => {
-	const response = await request(app).post("/settlements").send(payload);
-	expect(response.status).toBe(201);
-});
-</good-example>
-<bad-example rule="[testing#INTEGTEST]" name="unit-test-integration-case">
-it("settles a wallet", async () => {
-	const result = await settlementController.settleWallet(payload);
-	expect(result.statusCode).toBe(201);
-});
-</bad-example>
-
-- [testing#UNITFOCUS] Unit tests **SHOULD** focus on DB stores, snapshots, and pure utilities with dense business logic.
-<good-example rule="[testing#UNITFOCUS]" name="unit-test-pure-utility">
-it("calculates settlement fee", () => {
-	expect(calculateSettlementFee("10000")).toBe("125");
-});
-</good-example>
-<bad-example rule="[testing#UNITFOCUS]" name="unit-test-controller-flow">
-it("calls store from controller", async () => {
-	await controller.handle(request, response);
-	expect(store.insert).toHaveBeenCalled();
-});
-</bad-example>
-
-- [testing#NOPASSTST] Passthrough managers and controllers **SHOULD NOT** be treated as strong unit-test targets.
-<good-example rule="[testing#NOPASSTST]" name="avoid-passthrough-manager-unit-test">
-it("creates a settlement through the integration boundary", async () => {
-	const response = await request(app).post("/settlements").send(payload);
-	expect(response.status).toBe(201);
-});
-</good-example>
-<bad-example rule="[testing#NOPASSTST]" name="passthrough-manager-unit-test">
-it("forwards payload to the store", async () => {
-	await settlementManager.create(payload);
-	expect(settlementStore.create).toHaveBeenCalledWith(payload);
-});
-</bad-example>
-
 - [testing#FROMPARTL] TypeScript tests **SHOULD** prefer `fromPartial<T>(...)` for typed partial fixtures.
 <good-example rule="[testing#FROMPARTL]" name="from-partial-fixture">
 const walletRecord = fromPartial<IWalletRecord>({ wallet_id: "w_1" });
@@ -787,39 +723,6 @@ function readSelection(record: ISelectionRecord): ISelection {
 }
 </bad-example>
 
-<findings>
-- **Title**: Imperative, ≤80 chars. Include rule metadata when it fits, for example `[errors-logging#THROWINV][MUST] Throw invariant violation immediately`.
-- **Body**: One paragraph in neutral tone. It **MUST** state the violated rule ID, rule family, the RFC 2119 strength, why the changed code violates it, and what concrete rewrite would satisfy it.
-- **Suggestion blocks**: Only for concrete replacement code. Preserve exact whitespace. No commentary.
-</findings>
-
-<output>
-Each `report_finding` requires:
-- `title`: Imperative, ≤80 chars
-- `body`: One paragraph
-- `priority`: 0-3
-- `confidence`: 0.0-1.0
-- `file_path`: Absolute path
-- `line_start`, `line_end`: Range ≤10 lines, must overlap diff
-
-Final `submit_result` call (payload under `result.data`):
-- `result.data.overall_style_verdict`: `adherent`, `advisory_violations`, or `hard_violations`
-- `result.data.explanation`: Plain text, 1-3 sentences summarizing verdict. Do not repeat findings (captured via `report_finding`).
-- `result.data.confidence`: 0.0-1.0
-- `result.data.findings`: Optional; **MUST** omit (auto-populated from `report_finding`)
-
-Verdict mapping:
-- `adherent`: No embedded-style-guide findings in the patch.
-- `advisory_violations`: One or more `SHOULD` / `SHOULD NOT` findings, and no `MUST` / `MUST NOT` findings.
-- `hard_violations`: One or more `MUST` / `MUST NOT` findings.
-
-You **MUST NOT** output JSON or code blocks.
-</output>
-
-<critical>
-Every finding **MUST** be patch-anchored, evidence-backed, and tied to an embedded rule.
-Keep the verdict aligned with RFC 2119 strength: `MUST` / `MUST NOT` findings are hard violations; `SHOULD` / `SHOULD NOT` findings are advisory violations.
-</critical>
 - [readability-refactoring#SPLITCOND] Complex conditions **SHOULD** be broken into named booleans or multiple statements.
 <good-example rule="[readability-refactoring#SPLITCOND]" name="named-boolean-guard">
 const isLinkedInternal = linkedTransaction?.type === Db.BankAccountTransactionType.Internal;
@@ -868,3 +771,53 @@ function buildSelectionMetadata(input: ISelectionInput): ISelectionMetadata {
 }
 </bad-example>
 
+- [readability-refactoring#FITLOCAL] When a change extends an established local family of shapes, fields, helpers, or contracts, code **MUST** fit the new case into that existing pattern unless the task is explicitly a refactor or the current pattern violates a stronger rule. Reviews **MUST NOT** demand that a single feature change re-shape the whole family toward a cleaner design just because that alternative would be preferable in isolation.
+<good-example rule="[readability-refactoring#FITLOCAL]" name="extend-existing-local-family-shape">
+type IOperationParameters = {
+	existingFlow?: IExistingFlowParameters;
+	newFlow?: INewFlowParameters;
+};
+</good-example>
+<bad-example rule="[readability-refactoring#FITLOCAL]" name="single-feature-change-breaks-established-local-family">
+type INewFlowOperation = {
+	kind: OperationKind.NewFlow;
+	parameters: {
+		newFlow: INewFlowParameters;
+	};
+};
+</bad-example>
+</style-guide>
+
+<findings>
+- **Title**: Imperative, ≤80 chars. Include rule metadata when it fits, for example `[errors-logging#THROWINV][MUST] Throw invariant violation immediately`.
+- **Body**: One paragraph in neutral tone. It **MUST** state the violated rule ID, rule family, the RFC 2119 strength, why the changed code violates it, and what concrete rewrite would satisfy it.
+- **Suggestion blocks**: Only for concrete replacement code. Preserve exact whitespace. No commentary.
+</findings>
+
+<output>
+Each `report_finding` requires:
+- `title`: Imperative, ≤80 chars
+- `body`: One paragraph
+- `priority`: 0-3
+- `confidence`: 0.0-1.0
+- `file_path`: Absolute path
+- `line_start`, `line_end`: Range ≤10 lines, must overlap diff
+
+Final `submit_result` call (payload under `result.data`):
+- `result.data.overall_style_verdict`: `adherent`, `advisory_violations`, or `hard_violations`
+- `result.data.explanation`: Plain text, 1-3 sentences summarizing verdict. Do not repeat findings (captured via `report_finding`).
+- `result.data.confidence`: 0.0-1.0
+- `result.data.findings`: Optional; **MUST** omit (auto-populated from `report_finding`)
+
+Verdict mapping:
+- `adherent`: No embedded-style-guide findings in the patch.
+- `advisory_violations`: One or more `SHOULD` / `SHOULD NOT` findings, and no `MUST` / `MUST NOT` findings.
+- `hard_violations`: One or more `MUST` / `MUST NOT` findings.
+
+You **MUST NOT** output JSON or code blocks.
+</output>
+
+<critical>
+Every finding **MUST** be patch-anchored, evidence-backed, and tied to an embedded rule.
+Keep the verdict aligned with RFC 2119 strength: `MUST` / `MUST NOT` findings are hard violations; `SHOULD` / `SHOULD NOT` findings are advisory violations.
+</critical>
