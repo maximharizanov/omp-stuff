@@ -262,6 +262,16 @@ function isWalletActive(status: IWalletRecord["status"]): boolean {
 }
 </bad-example>
 
+- [typescript-design#IMPORTPATH] Imports **SHOULD** use pre-defined aliases when available (for example `@domain-logic`, `@store`, `@utils`, `@config`, `@test-utils`) instead of long relative paths; when an alias does not fit, imports **SHOULD** come from the highest relevant module barrel rather than deep implementation files like `contracts/IManager`, unless the deeper file is the intentional public entry point.
+<good-example rule="[typescript-design#IMPORTPATH]" name="alias-or-module-barrel-import">
+import { FundsGroupOperations } from "@domain-logic";
+import { createPaymentBatch } from "../../payments";
+</good-example>
+<bad-example rule="[typescript-design#IMPORTPATH]" name="deep-relative-implementation-import">
+import { type IManager } from "../../../funds-group-operations/contracts/IManager";
+import { createPaymentBatch } from "../../payments/internal/createPaymentBatch";
+</bad-example>
+
 - [typescript-design#HONESTBDRY] Helpers and boundary types **SHOULD** describe the data they actually own; avoid ad hoc intersections unless the domain object is genuinely both things.
 <good-example rule="[typescript-design#HONESTBDRY]" name="truthful-boundary-type">
 interface ISettlementInput {
