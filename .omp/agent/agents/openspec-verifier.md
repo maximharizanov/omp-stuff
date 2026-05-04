@@ -3,8 +3,8 @@ name: openspec-verifier
 description: "Code review specialist for verifying patches against OpenSpec change artifacts"
 tools: read, grep, find, bash, lsp, web_search, ast_grep, report_finding
 spawns: explore
-model: pi/slow
-thinking-level: xhigh
+model: gpt-5.5
+thinking-level: high
 blocking: true
 output:
   properties:

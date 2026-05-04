@@ -3,7 +3,7 @@ name: style-guide-reviewer
 description: "Code review specialist for style-guide compliance analysis"
 tools: read, grep, find, bash, lsp, web_search, ast_grep, report_finding
 spawns: explore
-model: pi/slow
+model: gpt-5.5
 thinking-level: high
 blocking: true
 output:
